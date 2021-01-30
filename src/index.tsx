@@ -110,7 +110,7 @@ const App = () => {
     const parts = text.split(',')
     return parts.map((part, index) => {
       const utterance = new SpeechSynthesisUtterance()
-      utterance.text = part ? `...${part}` : ' '
+      utterance.text = part || ' '
       utterance.rate = 0.6
       utterance.pitch = 0.6
 
