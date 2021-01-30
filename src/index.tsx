@@ -9,7 +9,6 @@ import { render, createPortal } from 'react-dom'
 import jsonURL from 'json-url'
 import qrcode from 'qrcode'
 import debounce from 'lodash/debounce'
-import { updateWith } from 'lodash'
 
 type Verse = {
   text: string
