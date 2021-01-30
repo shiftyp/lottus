@@ -49,7 +49,7 @@ setDefaultHandler((args) => {
     return cacheStrategy.handle(args)
   }
   if (args.url.pathname === '/index.html') {
-    return defaultStrategy.handle(args.url.href);
+    return defaultStrategy.handle(args);
   }
 
   const url = new URL('/index.html', args.url.origin);
