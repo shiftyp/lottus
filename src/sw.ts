@@ -44,7 +44,7 @@ const cacheStrategy = new CacheFirst({
 
 // SPA
 setDefaultHandler((args) => {
-  if (/(\.(js|css))$/.test(args.url.pathname)) {
+  if (/(\.(js|css|map))$/.test(args.url.pathname)) {
     return defaultStrategy.handle(args)
   }
   if (/(\.(webp|gif|jp(e)?g|png|webmanifest))$/.test(args.url.pathname)) {
