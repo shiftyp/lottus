@@ -1,3 +1,3 @@
 # lotus
 
-Code for [lotus.app](https://lotus.app)
+Code for [lottus.app](https://lottus.app)
