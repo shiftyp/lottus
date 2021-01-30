@@ -22,6 +22,7 @@ type UtteranceInfo = {
 
 const App = () => {
   const canvas = useRef<HTMLCanvasElement>()
+  const [form, setForm] = useState<HTMLFormElement>()
 
   const [qrURL, setQrURL] = useState<string>('')
 
@@ -53,6 +54,15 @@ const App = () => {
   )
 
   const [loaded, setLoaded] = useState<boolean>(false)
+  useEffect(() => {
+    if (verses.length && form) {
+      Array.from(form.querySelectorAll('textarea')).forEach((textarea) => {
+        if (textarea.clientHeight < textarea.scrollHeight) {
+          textarea.style.height = `max(1.5em, ${textarea.scrollHeight}px)`
+        }
+      })
+    }
+  }, [verses, form])
 
   const updateQRCode = debounce(() => {
     qrcode.toCanvas(canvas.current, window.location.href, () => {
@@ -70,7 +80,7 @@ const App = () => {
       jsonURL('lzw')
         .compress({ verses, title })
         .then((output) => {
-          window.history.replaceState({}, '', output)
+          window.history.replaceState({}, `Lottus: ${title}`, output)
           updateQRCode()
         })
     }
@@ -95,42 +105,53 @@ const App = () => {
     updateVerses({ verses: [] })
   }
 
-  const makeUtterance = (verse) => {
+  const makeUtterances = (verse) => {
     const { text, pause } = verse
-    const utterance = new SpeechSynthesisUtterance()
-    utterance.text = text || ' '
-    utterance.rate = 0.6
-    utterance.pitch = 0.6
+    const parts = text.split(',')
+    return parts.map((part, index) => {
+      const utterance = new SpeechSynthesisUtterance()
+      utterance.text = part || ' '
+      utterance.rate = 0.6
+      utterance.pitch = 0.6
 
-    return {
-      utterance,
-      pause,
-    }
+      return {
+        utterance,
+        pause: index === parts.length - 1 ? pause : 300,
+      }
+    })
   }
 
-  const speak = (index, utteranceInfo = makeUtterance(verses[index])) =>
+  const speak = (index, utteranceInfos = makeUtterances(verses[index])) =>
     new Promise((resolve, reject) => {
       if (isPlaying.current) {
         setCurrentVerse(index)
 
-        utteranceInfo.utterance.addEventListener('end', () => {
-          // @ts-ignore
-          currentTimeout.current = setTimeout(resolve, utteranceInfo.pause)
-          setCurrentVerse(-1)
-        })
-        speechSynthesis.speak(utteranceInfo.utterance)
+        utteranceInfos
+          .reduce(
+            (last, { utterance, pause }) =>
+              last.then(
+                () =>
+                  new Promise((resolve, reject) => {
+                    utterance.addEventListener('end', () => {
+                      // @ts-ignore
+                      currentTimeout.current = setTimeout(resolve, pause)
+                    })
+                    speechSynthesis.speak(utterance)
+                  })
+              ),
+            Promise.resolve()
+          )
+          .then(resolve)
+          .finally(() => setCurrentVerse(-1))
       } else {
         reject('Not playing')
       }
     })
 
   const play = useCallback(() => {
-    const utteranceInfos = verses.map<UtteranceInfo>(makeUtterance)
-
-    utteranceInfos
+    verses
       .reduce(
-        (last, utteranceInfo, index) =>
-          last.then(() => speak(index, utteranceInfo)),
+        (last, _, index) => last.then(() => speak(index)),
         Promise.resolve()
       )
       .catch(console.log)
@@ -143,22 +164,44 @@ const App = () => {
 
   return (
     <form
+      ref={setForm}
       style={{
         display: 'flex',
         flexDirection: 'column',
         maxWidth: '100%',
       }}
     >
-      <input
-        placeholder="Pick a title..."
-        type="text"
-        value={title}
+      <div
         style={{
+          display: 'flex',
+          padding: '10px',
           fontSize: '2em',
-          color: 'black',
         }}
-        onChange={(e) => setTitle(e.target.value)}
-      />
+      >
+        <span
+          style={{
+            padding: '0 10px',
+            backgroundColor: 'black',
+            color: 'white',
+          }}
+        >
+          lottus 🧘🏻‍
+        </span>
+        <input
+          placeholder="Pick a title..."
+          type="text"
+          value={title}
+          style={{
+            fontSize: '1em',
+            color: 'black',
+            paddingLeft: '10px',
+            backgroundColor: 'rgba(255, 255, 255, 0.75)',
+            border: '2px solid black',
+            flex: '1',
+          }}
+          onChange={(e) => setTitle(e.target.value)}
+        />
+      </div>
       <div
         style={{
           display: 'flex',
@@ -190,6 +233,8 @@ const App = () => {
           onClick={() => {
             isPlaying.current = false
             clearTimeout(currentTimeout.current)
+            speechSynthesis.cancel()
+            setCurrentVerse(-1)
           }}
         >
           Stop
@@ -209,12 +254,15 @@ const App = () => {
           return (
             <div
               style={{
+                display: 'flex',
+                flexDirection: 'column',
                 flexBasis: '100px',
+                justifyContent: 'space-between',
                 padding: '10px',
                 margin: '10px',
                 border: '2px solid black',
                 borderRadius: '10px',
-                backgroundColor: currentVerse === index ? 'black' : 'white',
+                backgroundColor: currentVerse === index ? 'black' : 'lightgray',
                 color: currentVerse === index ? 'white' : 'black',
                 opacity: currentVerse > -1 && currentVerse !== index ? 0.5 : 1,
                 transition: 'all 0.5s',
@@ -228,54 +276,58 @@ const App = () => {
               >
                 <span>Text</span>
                 <textarea
+                  style={{ resize: 'none', boxSizing: 'content-box' }}
                   value={verse.text}
                   onChange={(e) => {
                     updateVerses({ index, verse: { text: e.target.value } })
                   }}
                 />
               </label>
-              <label
-                style={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                }}
-              >
-                <span>Pause</span>
-                <input
-                  type="number"
-                  value={verse.pause / 1000}
-                  min={0}
-                  onChange={(e) => {
-                    updateVerses({
-                      index,
-                      verse: { pause: e.target.valueAsNumber * 1000 },
-                    })
+              <div>
+                <label
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
                   }}
-                />
-              </label>
-              <button
-                type="button"
-                onClick={() => {
-                  isPlaying.current = true
-                  speak(index)
-                }}
-              >
-                Test
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  if (
-                    window.confirm(
-                      'Are you sure you want to delete this verse?'
-                    )
-                  ) {
-                    updateVerses({ index, verse: null })
-                  }
-                }}
-              >
-                Delete
-              </button>
+                >
+                  <span>Pause</span>
+                  <input
+                    type="number"
+                    value={verse.pause / 1000}
+                    min={0}
+                    onChange={(e) => {
+                      updateVerses({
+                        index,
+                        verse: { pause: e.target.valueAsNumber * 1000 },
+                      })
+                    }}
+                  />
+                </label>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    isPlaying.current = true
+                    speak(index)
+                  }}
+                >
+                  Test
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (
+                      window.confirm(
+                        'Are you sure you want to delete this verse?'
+                      )
+                    ) {
+                      updateVerses({ index, verse: null })
+                    }
+                  }}
+                >
+                  Delete
+                </button>
+              </div>
             </div>
           )
         })}
@@ -295,11 +347,20 @@ const App = () => {
       )}
       {qrURL && (
         <div
-          style={{ padding: '10px', display: 'flex', flexDirection: 'column' }}
+          style={{
+            padding: '10px',
+            display: 'flex',
+            flexDirection: 'column',
+            maxWidth: '320px',
+          }}
         >
-          <small>Sharable QR Code:</small>
+          <small style={{ background: 'darkgray' }}>Sharable QR Code:</small>
           <img
-            style={{ maxWidth: '100px', width: '100%' }}
+            style={{
+              maxWidth: '300px',
+              width: '100%',
+              border: '10px solid darkgray',
+            }}
             alt="QR Code"
             src={qrURL}
           />
