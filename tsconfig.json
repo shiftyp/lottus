@@ -1,0 +1,12 @@
+{
+  "compilerOptions": {
+    "allowSyntheticDefaultImports": true,
+    "jsx": "react",
+    "target": "ES6",
+    "moduleResolution": "node",
+    "lib": [
+      "ES2016",
+      "dom"
+    ]
+  }
+}
