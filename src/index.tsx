@@ -180,6 +180,7 @@ const App = () => {
           display: 'flex',
           padding: '10px',
           fontSize: '2em',
+          justifyContent: 'min-content',
         }}
       >
         <span
@@ -187,6 +188,8 @@ const App = () => {
             padding: '0 10px',
             backgroundColor: 'black',
             color: 'white',
+            flex: '1',
+            minWidth: '0',
           }}
         >
           lottus 🧘🏻‍
@@ -201,7 +204,8 @@ const App = () => {
             paddingLeft: '10px',
             backgroundColor: 'rgba(255, 255, 255, 0.75)',
             border: '2px solid black',
-            flex: '1',
+            flex: '3',
+            minWidth: '0',
           }}
           onChange={(e) => setTitle(e.target.value)}
         />
@@ -243,6 +247,7 @@ const App = () => {
           display: 'flex',
           maxWidth: '100%',
           flexWrap: 'wrap',
+          paddingBottom: '200px',
         }}
       >
         {verses.map((verse, index) => {
@@ -251,7 +256,7 @@ const App = () => {
               style={{
                 display: 'flex',
                 flexDirection: 'column',
-                flexBasis: '100px',
+                flex: '1',
                 justifyContent: 'space-between',
                 padding: '10px',
                 margin: '10px',
@@ -340,27 +345,32 @@ const App = () => {
         />,
         document.body
       )}
-      {qrURL && (
-        <div
-          style={{
-            padding: '10px',
-            display: 'flex',
-            flexDirection: 'column',
-            maxWidth: '320px',
-          }}
-        >
-          <small style={{ background: 'darkgray' }}>Sharable QR Code:</small>
-          <img
+      {qrURL &&
+        createPortal(
+          <div
             style={{
-              maxWidth: '300px',
-              width: '100%',
-              border: '10px solid darkgray',
+              position: 'fixed',
+              bottom: 0,
+              right: 0,
+              padding: '10px',
+              display: 'flex',
+              flexDirection: 'column',
+              width: '150px',
             }}
-            alt="QR Code"
-            src={qrURL}
-          />
-        </div>
-      )}
+          >
+            <small style={{ background: 'darkgray' }}>Sharable QR Code:</small>
+            <img
+              style={{
+                boxSizing: 'border-box',
+                width: '100%',
+                border: '10px solid darkgray',
+              }}
+              alt="QR Code"
+              src={qrURL}
+            />
+          </div>,
+          document.body
+        )}
     </form>
   )
 }
