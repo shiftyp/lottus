@@ -98,7 +98,7 @@ const App = () => {
 
   const [currentVerse, setCurrentVerse] = useState<number>(-1)
 
-  const isPlaying = useRef<boolean>(false)
+  const [isPlaying, setIsPlaying] = useState<boolean>(false)
   const currentTimeout = useRef<number>(-1)
 
   const clear = () => {
@@ -110,7 +110,7 @@ const App = () => {
     const parts = text.split(',')
     return parts.map((part, index) => {
       const utterance = new SpeechSynthesisUtterance()
-      utterance.text = part || ' '
+      utterance.text = part ? `...${part}` : ' '
       utterance.rate = 0.6
       utterance.pitch = 0.6
 
@@ -123,40 +123,44 @@ const App = () => {
 
   const speak = (index, utteranceInfos = makeUtterances(verses[index])) =>
     new Promise((resolve, reject) => {
-      if (isPlaying.current) {
-        setCurrentVerse(index)
+      setCurrentVerse(index)
 
-        utteranceInfos
-          .reduce(
-            (last, { utterance, pause }) =>
-              last.then(
-                () =>
-                  new Promise((resolve, reject) => {
-                    utterance.addEventListener('end', () => {
-                      // @ts-ignore
-                      currentTimeout.current = setTimeout(resolve, pause)
-                    })
-                    speechSynthesis.speak(utterance)
+      utteranceInfos
+        .reduce(
+          (last, { utterance, pause }) =>
+            last.then(
+              () =>
+                new Promise((resolve, reject) => {
+                  utterance.addEventListener('end', () => {
+                    // @ts-ignore
+                    currentTimeout.current = setTimeout(resolve, pause)
                   })
-              ),
-            Promise.resolve()
-          )
-          .then(resolve)
-          .finally(() => setCurrentVerse(-1))
-      } else {
-        reject('Not playing')
-      }
+                  speechSynthesis.speak(utterance)
+                })
+            ),
+          Promise.resolve()
+        )
+        .then(resolve)
+        .finally(() => setCurrentVerse(-1))
     })
 
   const play = useCallback(() => {
+    setIsPlaying(true)
     verses
       .reduce(
         (last, _, index) => last.then(() => speak(index)),
         Promise.resolve()
       )
       .catch(console.log)
-      .finally(() => (isPlaying.current = false))
+      .finally(() => setIsPlaying(false))
   }, [verses])
+
+  const stop = () => {
+    setIsPlaying(false)
+    clearTimeout(currentTimeout.current)
+    speechSynthesis.cancel()
+    setCurrentVerse(-1)
+  }
 
   if (!loaded) {
     return <>Loading...</>
@@ -222,21 +226,12 @@ const App = () => {
         <button
           type="button"
           onClick={() => {
-            isPlaying.current = true
             play()
           }}
         >
           Play
         </button>
-        <button
-          type="button"
-          onClick={() => {
-            isPlaying.current = false
-            clearTimeout(currentTimeout.current)
-            speechSynthesis.cancel()
-            setCurrentVerse(-1)
-          }}
-        >
+        <button type="button" onClick={() => stop()}>
           Stop
         </button>
         <button type="button" onClick={() => clear()}>
@@ -307,7 +302,7 @@ const App = () => {
                 <button
                   type="button"
                   onClick={() => {
-                    isPlaying.current = true
+                    setIsPlaying(true)
                     speak(index)
                   }}
                 >
