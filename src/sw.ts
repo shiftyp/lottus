@@ -50,6 +50,9 @@ setDefaultHandler((args) => {
   if (/(\.(webp|gif|jp(e)?g|png|webmanifest))$/.test(args.url.pathname)) {
     return cacheStrategy.handle(args)
   }
+  if (args.url.pathname === '/index.html') {
+    return fetch(args.url.href);
+  }
 
   const cacheKey = precacheController.getCacheKeyForURL('/index.html');
   return caches.match(cacheKey);
