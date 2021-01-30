@@ -110,7 +110,7 @@ const App = () => {
     const parts = text.split(',')
     return parts.map((part, index) => {
       const utterance = new SpeechSynthesisUtterance()
-      utterance.text = part || ' '
+      utterance.text = part ? `, ${part}` : ' '
       utterance.rate = 0.6
       utterance.pitch = 0.6
 
@@ -177,22 +177,51 @@ const App = () => {
     >
       <div
         style={{
+          position: 'relative',
           display: 'flex',
-          padding: '10px',
-          fontSize: '2em',
-          justifyContent: 'min-content',
+          padding: '8px',
+          margin: '10px 10px 40px 10px',
+          fontSize: '1.8em',
+          border: '2px solid black',
+          backgroundColor: 'black',
+          borderRadius: '10px',
+          alignItems: 'center',
         }}
       >
+        <div
+          style={{
+            width: 0,
+            height: 0,
+            position: 'absolute',
+            bottom: '-30px',
+            left: '30px',
+            borderTop: '30px solid transparent',
+            borderBottom: '30px solid transparent',
+            borderLeft: '30px solid black',
+            zIndex: -1,
+          }}
+        />
+        <span
+          style={{
+            padding: '0 0.1em 0 0',
+            backgroundColor: 'black',
+            color: 'white',
+            flex: '1 1 1em',
+            minWidth: '0',
+          }}
+        >
+          🧘
+        </span>
         <span
           style={{
             padding: '0 10px',
             backgroundColor: 'black',
             color: 'white',
-            flex: '1',
+            flex: '1 1 auto',
             minWidth: '0',
           }}
         >
-          lottus 🧘🏻‍
+          lottus
         </span>
         <input
           placeholder="Pick a title..."
@@ -202,10 +231,10 @@ const App = () => {
             fontSize: '1em',
             color: 'black',
             paddingLeft: '10px',
-            backgroundColor: 'rgba(255, 255, 255, 0.75)',
             border: '2px solid black',
-            flex: '3',
+            flex: '100 100 auto',
             minWidth: '0',
+            borderRadius: '10px',
           }}
           onChange={(e) => setTitle(e.target.value)}
         />
@@ -218,6 +247,7 @@ const App = () => {
       >
         <button
           type="button"
+          disabled={isPlaying}
           onClick={() => {
             updateVerses({
               index: verses.length,
@@ -227,7 +257,11 @@ const App = () => {
         >
           Add Verse
         </button>
+        <button disabled={isPlaying} type="button" onClick={() => clear()}>
+          Clear
+        </button>
         <button
+          disabled={isPlaying}
           type="button"
           onClick={() => {
             play()
@@ -235,35 +269,34 @@ const App = () => {
         >
           Play
         </button>
-        <button type="button" onClick={() => stop()}>
+        <button disabled={!isPlaying} type="button" onClick={() => stop()}>
           Stop
-        </button>
-        <button type="button" onClick={() => clear()}>
-          Clear
         </button>
       </div>
       <div
         style={{
-          display: 'flex',
+          display: 'grid',
           maxWidth: '100%',
-          flexWrap: 'wrap',
-          paddingBottom: '200px',
+          gridTemplateColumns: 'repeat(auto-fit, 270px)',
+          paddingBottom: '250px',
         }}
       >
         {verses.map((verse, index) => {
           return (
             <div
               style={{
+                position: 'relative',
                 display: 'flex',
+                boxSizing: 'border-box',
                 flexDirection: 'column',
-                flex: '1',
                 justifyContent: 'space-between',
                 padding: '10px',
-                margin: '10px',
-                border: '2px solid black',
+                width: '100%',
+                maxWidth: '250px',
+                margin: '10px 10px 40px 10px',
                 borderRadius: '10px',
-                backgroundColor: currentVerse === index ? 'black' : 'lightgray',
-                color: currentVerse === index ? 'white' : 'black',
+                backgroundColor: 'black',
+                color: 'white',
                 opacity: currentVerse > -1 && currentVerse !== index ? 0.5 : 1,
                 transition: 'all 0.5s',
               }}
@@ -288,6 +321,7 @@ const App = () => {
                   style={{
                     display: 'flex',
                     flexDirection: 'column',
+                    marginBottom: '10px',
                   }}
                 >
                   <span>Pause</span>
@@ -306,6 +340,10 @@ const App = () => {
 
                 <button
                   type="button"
+                  disabled={isPlaying}
+                  style={{
+                    marginRight: '10px',
+                  }}
                   onClick={() => {
                     setIsPlaying(true)
                     speak(index)
@@ -315,6 +353,7 @@ const App = () => {
                 </button>
                 <button
                   type="button"
+                  disabled={isPlaying}
                   onClick={() => {
                     if (
                       window.confirm(
@@ -327,6 +366,19 @@ const App = () => {
                 >
                   Delete
                 </button>
+                <div
+                  style={{
+                    width: 0,
+                    height: 0,
+                    position: 'absolute',
+                    bottom: '-30px',
+                    left: '30px',
+                    borderTop: '30px solid transparent',
+                    borderBottom: '30px solid transparent',
+                    borderLeft: '30px solid black',
+                    zIndex: -1,
+                  }}
+                />
               </div>
             </div>
           )
@@ -345,32 +397,62 @@ const App = () => {
         />,
         document.body
       )}
-      {qrURL &&
-        createPortal(
+      {qrURL && (
+        <div
+          style={{
+            position: 'fixed',
+            bottom: '20px',
+            right: '20px',
+            padding: '10px',
+            display: 'flex',
+            flexDirection: 'column',
+            boxSizing: 'border-box',
+            maxWidth: 'calc(100% - 200px)',
+            width: '150px',
+            background: 'black',
+            color: 'white',
+            borderRadius: '10px',
+            textAlign: 'center',
+            border: '2px solid white',
+          }}
+        >
+          <small style={{}}>Sharable QR Code:</small>
+          <img
+            style={{
+              boxSizing: 'border-box',
+              width: '100%',
+            }}
+            alt="QR Code"
+            src={qrURL}
+          />
           <div
             style={{
-              position: 'fixed',
-              bottom: 0,
-              right: 0,
-              padding: '10px',
-              display: 'flex',
-              flexDirection: 'column',
-              width: '150px',
+              boxSizing: 'border-box',
+              fontSize: '0.5em',
+              paddingTop: '10px',
             }}
           >
-            <small style={{ background: 'darkgray' }}>Sharable QR Code:</small>
-            <img
+            <span
               style={{
-                boxSizing: 'border-box',
-                width: '100%',
-                border: '10px solid darkgray',
+                position: 'relative',
+                display: 'inline-block',
+                paddingRight: '0.8em',
               }}
-              alt="QR Code"
-              src={qrURL}
-            />
-          </div>,
-          document.body
-        )}
+            >
+              Built with 🧘 by
+            </span>
+            <a
+              style={{
+                color: 'white',
+              }}
+              href="https://twitter.com/joyofui"
+            >
+              Ryan
+            </a>
+            !
+          </div>
+        </div>
+      )}
     </form>
   )
 }
