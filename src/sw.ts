@@ -7,8 +7,6 @@ import {
 
 const precacheController = new PrecacheController()
 
-precacheController.precache(['/index.html']);
-
 
 // Used for filtering matches based on status code, header, or both
 import { CacheableResponsePlugin } from 'workbox-cacheable-response'
@@ -51,9 +49,10 @@ setDefaultHandler((args) => {
     return cacheStrategy.handle(args)
   }
   if (args.url.pathname === '/index.html') {
-    return fetch(args.url.href);
+    return defaultStrategy.handle(args.url.href);
   }
 
-  const cacheKey = precacheController.getCacheKeyForURL('/index.html');
-  return caches.match(cacheKey);
+  const url = new URL('/index.html', args.url.origin);
+
+  return defaultStrategy.handle({ ...args, url })
 })
