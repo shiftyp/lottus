@@ -346,7 +346,9 @@ const App = () => {
                   }}
                   onClick={() => {
                     setIsPlaying(true)
-                    speak(index)
+                    speak(index).then(() => {
+                      setIsPlaying(false)
+                    })
                   }}
                 >
                   Test
